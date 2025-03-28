@@ -26,7 +26,22 @@ def send_string(hwnd, key):
     win32gui.EnumChildWindows(hwnd, send, 0)
 
 def focus_window(hwnd):
+  if not hwnd:
+    return
+
   if win32gui.IsIconic(hwnd):
     win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
   
   win32gui.SetForegroundWindow(hwnd)
+
+def is_window_focused(hwnd):
+  return hwnd == win32gui.GetForegroundWindow()
+
+def is_mouse_button_pressed():
+  return win32api.GetAsyncKeyState(0x01)
+
+def is_cursor_in_window(hwnd):
+  rect = win32gui.GetWindowRect(hwnd)
+  x_left, y_top, x_right, y_bottom = rect
+  cursor_x, cursor_y = win32api.GetCursorPos()
+  return x_left <= cursor_x <= x_right and y_top <= cursor_y <= y_bottom
