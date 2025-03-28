@@ -7,118 +7,127 @@ import tkinter as tk
 from tkinter import ttk
 from utils.window_utils import *
 
-def on_window_select(event):
-  selected_index = window_selector.current()
-  selected_window = windows[selected_index]
-  hwnd, title = selected_window
-  _, pid = win32process.GetWindowThreadProcessId(hwnd)
-  window_details.set(f"Selected Window: \"{title}\"\nHandle: {hwnd}\nProcess ID: {pid}")
+DEFAULT_INTERVAL = 1.0
+SLEEP_DURATION = 0.01
 
-def on_combo_select(event):
-  selected_index = combo_selector.current()
-  selected_combo = combos[selected_index]
-  title, sequence = selected_combo
-  print(f"SELECTED: {title}")
-  press_manager.set_buttons(sequence)
+class WindowClicker:
+  def __init__(self, root):
+    self.root = root
+    root.title("Window Clicker")
+    root.geometry("450x400")
+    
+    self.windows = []
+    self.window_titles = []
+    # self.windows = get_all_window_titles_and_handles()
+    # self.window_titles = [title for _, title in self.windows]
+    self.selected_window = None
+    self.hwnd = None
 
-def get_selected_window_handle():
-  selected_index = window_selector.current()
-  return windows[selected_index][0] if selected_index >= 0 else None
+    self.press_manager = PressManager()
+    self.create_widgets()
+    self.refresh_window_list()
 
-def focus_selected_window():
-  hwnd = get_selected_window_handle()
-  if hwnd:
-    focus_window(hwnd)
+
+  def refresh_window_list(self):
+    self.windows = get_all_window_titles_and_handles()
+    self.window_titles = [title for _, title in self.windows]
+    self.window_selector['values'] = self.window_titles
+    self.window_selector.set('')
+  
+  def create_widgets(self):
+    tk.Label(self.root, text="Select a Window:").pack(pady=10)
+    self.window_selector = ttk.Combobox(self.root, values=self.window_titles, state='readonly')
+    self.window_selector.pack(pady=10)
+    self.window_selector.bind("<<ComboboxSelected>>", self.on_window_select)
+
+    tk.Label(self.root, text="Set Interval (seconds):").pack(pady=10)
+    self.interval_entry = tk.Entry(self.root)
+    self.interval_entry.pack(pady=10)
+    self.interval_entry.insert(0, str(DEFAULT_INTERVAL))
+    
+    self.refresh_button = tk.Button(self.root, text="Refresh Windows", command=self.refresh_window_list)
+    self.refresh_button.pack(pady=10)
+
+    self.window_details = tk.StringVar()
+    tk.Label(self.root, textvariable=self.window_details, justify=tk.LEFT).pack(pady=10)
+
+    self.focus_button = tk.Button(
+      self.root, 
+      text="Focus Selected Window", 
+      command=lambda: focus_window(self.get_selected_window()[0])
+    )
+    self.focus_button.pack(pady=10)
+
+    self.press_button = tk.Button(self.root, text="Start Pressing", command=self.start_pressing_with_interval)
+    self.press_button.pack(pady=10)
+
+  def on_window_select(self, _):
+    hwnd, title = self.get_selected_window()
+    if hwnd is None:
+      self.window_details.set("No window selected.")
+      return
+    
+    _, pid = win32process.GetWindowThreadProcessId(hwnd)
+    self.window_details.set(f"Selected Window: \"{title}\"\nHandle: {hwnd}\nProcess ID: {pid}")
+    self.hwnd = hwnd
+
+  def start_pressing_with_interval(self):
+    if self.press_manager.is_pressing:
+      self.press_manager.stop_pressing()
+      self.press_button.config(text="Start Pressing")
+      return
+    
+    if not self.hwnd:
+      print("No window selected")
+      return
+    
+    interval = float(self.interval_entry.get())
+    if interval <= 0:
+      print("Interval must be positive.")
+      return
+
+    self.press_button.config(text="Stop Pressing")
+    self.root.after(100, lambda: self.press_manager.start_pressing(self.hwnd, interval))
+
+  def get_selected_window(self):
+    selected_index = self.window_selector.current()
+    return self.windows[selected_index] if selected_index >= 0 else (None, None)
 
 class PressManager:
   def __init__(self):
-    self.pressing = False
+    self.is_pressing = False
+    self.stop_event = threading.Event()
     self.thread = None
-    self.interval = 1
 
-  def set_interval(self, interval):
-    self.interval = interval
-
-  def toggle_pressing(self):
-    if self.pressing:
-      self.stop_pressing()
-    else:
-      self.start_pressing()
-
-  def start_pressing(self):
-    hwnd = get_selected_window_handle()
+  def start_pressing(self, hwnd, interval):
     if hwnd:
-      self.pressing = True
-      self.thread = threading.Thread(target=self.press_daemon, args=(hwnd,), daemon=True)
+      self.is_pressing = True
+      self.stop_event.clear()
+      self.thread = threading.Thread(target=self.press_daemon, args=(hwnd, interval), daemon=True)
       self.thread.start()
-      press_button.config(text="Stop Pressing")
 
   def stop_pressing(self):
-    self.pressing = False
+    self.is_pressing = False
+    self.stop_event.set()
     if self.thread:
       self.thread.join(timeout=1.0)
-    press_button.config(text="Start Pressing")
 
-  def is_cursor_in_window(self, hwnd):
-    rect = win32gui.GetWindowRect(hwnd)
-    x_left, y_top, x_right, y_bottom = rect
-    cursor_x, cursor_y = win32api.GetCursorPos()
-    return x_left <= cursor_x <= x_right and y_top <= cursor_y <= y_bottom
-
-  def is_window_focused(self, hwnd):
-    self.window_focused = hwnd == win32gui.GetForegroundWindow()
-    return self.window_focused
-
-  def is_mouse_button_pressed(self):
-    return win32api.GetAsyncKeyState(0x01)
-
-  def press_daemon(self, hwnd):
-    while self.pressing:
-      if self.is_window_focused(hwnd) and self.is_cursor_in_window(hwnd) and self.is_mouse_button_pressed():
-        time.sleep(0.01)
+  def press_daemon(self, hwnd, interval = DEFAULT_INTERVAL, position = (0, 0)):
+    while self.is_pressing:
+      if is_window_focused(hwnd) and is_cursor_in_window(hwnd) and is_mouse_button_pressed():
+        time.sleep(SLEEP_DURATION)
         continue
-
-      click_position(hwnd, 0, 0)
-      time.sleep(self.interval)
+      
+      position = (318, 492)
+      click_position(hwnd, position[0], position[1])
+      if self.stop_event.wait(interval):
+        break
     print("ENDED THREAD")
 
-
 if __name__ == "__main__":
-  root = tk.Tk()
-  root.title("Window Selector")
-  root.geometry("450x400")
-
-  windows = get_all_window_titles_and_handles()
-  window_titles = [title for _, title in windows]
-
-  tk.Label(root, text="Select a Window:").pack(pady=10)
-  window_selector = ttk.Combobox(root, values=window_titles, state='readonly')
-  window_selector.pack(pady=10)
-  window_selector.bind("<<ComboboxSelected>>", on_window_select)
-
-  tk.Label(root, text="Set Interval (seconds):").pack(pady=10)
-  interval_entry = tk.Entry(root)
-  interval_entry.pack(pady=10)
-  interval_entry.insert(0, "1")
-
-  window_details = tk.StringVar()
-  tk.Label(root, textvariable=window_details, justify=tk.LEFT).pack(pady=10)
-
-  focus_button = tk.Button(root, text="Focus Selected Window", command=focus_selected_window)
-  focus_button.pack(pady=10)
-
-  press_manager = PressManager()
-  def start_pressing_with_interval():
-    try:
-      interval = float(interval_entry.get())
-      press_manager.set_interval(interval)
-      press_manager.toggle_pressing()
-    except ValueError:
-      print("Invalid interval value")
-  press_button = tk.Button(root, text="Start Pressing", command=start_pressing_with_interval)
-  press_button.pack(pady=10)
-
   try:
+    root = tk.Tk()
+    app = WindowClicker(root)
     root.mainloop()
   except KeyboardInterrupt:
     exit()
