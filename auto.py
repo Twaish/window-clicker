@@ -18,10 +18,8 @@ class WindowClicker:
     
     self.windows = []
     self.window_titles = []
-    # self.windows = get_all_window_titles_and_handles()
-    # self.window_titles = [title for _, title in self.windows]
-    self.selected_window = None
     self.hwnd = None
+    self.selected_window = None
 
     self.press_manager = PressManager()
     self.create_widgets()
