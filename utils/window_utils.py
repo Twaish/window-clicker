@@ -18,13 +18,6 @@ def click_position(hwnd, x, y):
   win32gui.PostMessage(hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lParam)
   win32gui.PostMessage(hwnd, win32con.WM_LBUTTONUP, 0, lParam)
 
-def send_string(hwnd, key):
-  if key:
-    def send(handle, param):
-      for char in key:
-        win32gui.SendMessage(handle, win32con.WM_CHAR, ord(char), 0)
-    win32gui.EnumChildWindows(hwnd, send, 0)
-
 def focus_window(hwnd):
   if not hwnd:
     return
