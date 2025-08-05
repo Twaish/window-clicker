@@ -1,0 +1,8 @@
+{
+  "files.exclude": {
+    "**.spec": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/__pycache__": true,
+  }
+}
