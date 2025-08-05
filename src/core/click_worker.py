@@ -6,7 +6,7 @@ from settings import DEFAULT_CLICK_INTERVAL
 
 class ClickWorker(QObject):
   status_update = pyqtSignal(str)
-  finished = pyqtSignal()
+  pressing_update = pyqtSignal(bool)
 
   def __init__(self):
     super().__init__()
@@ -17,7 +17,7 @@ class ClickWorker(QObject):
 
   def start_pressing(self, hwnd, interval):
     if not hwnd:
-      return False
+      return
     
     self._hwnd = hwnd
     try:
@@ -26,13 +26,13 @@ class ClickWorker(QObject):
         raise ValueError("Interval must be positive")
     except Exception as e:
       self.status_update.emit(f"Invalid interval: {e}")
-      return False
+      return
     
     self._stop_event.clear()
     self._is_pressing = True
     threading.Thread(target=self._press_loop, daemon=True).start()
     self.status_update.emit("Started presssing.")
-    return True
+    self.pressing_update.emit(True)
 
   def stop_pressing(self):
     self._is_pressing = False
@@ -51,4 +51,4 @@ class ClickWorker(QObject):
         break
     self._is_pressing = False
     self.status_update.emit("Ended pressing thread.")
-    self.finished.emit()
+    self.pressing_update.emit(False)
