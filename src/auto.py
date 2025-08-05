@@ -11,12 +11,12 @@ from PyQt6.QtCore import QFileSystemWatcher
 from PyQt6.QtGui import QIcon
 from utils.config_utils import ensure_user_stylesheet
 from utils.FALLBACK_CSS import FALLBACK_CSS
-from settings import DEFAULT_CLICK_INTERVAL
+from settings import DEFAULT_CLICK_INTERVAL, APP_BAR_TITLE
 
 class WindowClicker(QMainWindow):
   def __init__(self):
     super().__init__()
-    self.setWindowTitle("Draco - Macro Application")
+    self.setWindowTitle(APP_BAR_TITLE)
     self.setFixedSize(500, 250)
     
     self.stylesheet_path = ensure_user_stylesheet()
