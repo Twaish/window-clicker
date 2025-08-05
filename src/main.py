@@ -22,29 +22,32 @@ class MainWindow(QMainWindow):
     self.watcher = QFileSystemWatcher([self.stylesheet_path])
     self.watcher.fileChanged.connect(self.apply_stylesheet)
 
-    # Navbar
-    navbar = QHBoxLayout()
-    pages = QStackedWidget()
-
-    macro_page = QPushButton("Macro")
-    macro_page.clicked.connect(lambda: pages.setCurrentIndex(0))
-    navbar.addWidget(macro_page)
-    pages.addWidget(MacroPage())
-
-    window_clicker_page = QPushButton("Window Clicker")
-    window_clicker_page.clicked.connect(lambda: pages.setCurrentIndex(1))
-    navbar.addWidget(window_clicker_page)
-    pages.addWidget(WindowClickerPage())
-    
-    main_layout = QVBoxLayout()
-    main_layout.addLayout(navbar)
-    main_layout.addWidget(pages)
     container = QWidget()
-    container.setLayout(main_layout)
+    layout = QVBoxLayout()
     self.setCentralWidget(container)
+
+    self.navbar = QHBoxLayout()
+    self.pages = QStackedWidget()
+
+    self.add_page("Macro", MacroPage())
+    self.add_page("Window Clicker", WindowClickerPage())
+    
+    layout.addLayout(self.navbar)
+    layout.addWidget(self.pages)
+    container.setLayout(layout)
 
     # Setup
     self.apply_stylesheet()
+  
+  def add_page(self, name, page):
+    if not isinstance(page, QWidget):
+      raise TypeError("Page must be a QWidget instance")
+    
+    next_index = self.pages.count()
+    nav_button = QPushButton(name)
+    nav_button.clicked.connect(lambda: self.pages.setCurrentIndex(next_index))
+    self.navbar.addWidget(nav_button)
+    self.pages.addWidget(page)
 
   def apply_stylesheet(self):
     try:
