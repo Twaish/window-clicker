@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
   QHBoxLayout, QMainWindow
 )
 from utils.window_utils import *
-from utils.click_worker import ClickWorker, DEFAULT_INTERVAL
+from core.click_worker import ClickWorker, DEFAULT_INTERVAL
 from PyQt6.QtCore import QFileSystemWatcher
 from PyQt6.QtGui import QIcon
 from utils.config_utils import ensure_user_stylesheet
@@ -18,7 +18,7 @@ class WindowClicker(QMainWindow):
     self.setWindowTitle("Draco - Macro Application")
     self.setFixedSize(500, 250)
     
-    self.stylesheet_path = ensure_user_stylesheet(app_name="draco", filename="style.css")
+    self.stylesheet_path = ensure_user_stylesheet()
     self.watcher = QFileSystemWatcher([self.stylesheet_path])
     self.watcher.fileChanged.connect(self.apply_stylesheet)
 
@@ -159,7 +159,7 @@ class WindowClicker(QMainWindow):
 
 if __name__ == "__main__":
   app = QApplication(sys.argv)
-  app.setWindowIcon(QIcon("logo.png"))
+  app.setWindowIcon(QIcon("../assets/logo.png"))
   window = WindowClicker()
   window.show()
   try:

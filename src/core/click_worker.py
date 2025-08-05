@@ -45,7 +45,7 @@ class ClickWorker(QObject):
     while self._is_pressing and not self._stop_event.is_set():
       hwnd = self._hwnd
       if is_window_focused(hwnd) and is_cursor_in_window(hwnd) and is_mouse_button_pressed():
-        time.sleep(SLEEP_DURATION)
+        time.sleep(0.01)
         continue
       position = (318, 492)
       click_position(hwnd, position[0], position[1])
