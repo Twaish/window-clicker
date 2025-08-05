@@ -2,9 +2,7 @@ import time
 import threading
 from utils.window_utils import *
 from PyQt6.QtCore import pyqtSignal, QObject
-
-DEFAULT_INTERVAL = 1.0
-SLEEP_DURATION = 0.01
+from settings import DEFAULT_CLICK_INTERVAL
 
 class ClickWorker(QObject):
   status_update = pyqtSignal(str)
@@ -14,7 +12,7 @@ class ClickWorker(QObject):
     super().__init__()
     self._is_pressing = False
     self._hwnd = None
-    self._interval = DEFAULT_INTERVAL
+    self._interval = DEFAULT_CLICK_INTERVAL
     self._stop_event = threading.Event()
 
   def start_pressing(self, hwnd, interval):

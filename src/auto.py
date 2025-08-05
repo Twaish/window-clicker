@@ -6,11 +6,12 @@ from PyQt6.QtWidgets import (
   QHBoxLayout, QMainWindow
 )
 from utils.window_utils import *
-from core.click_worker import ClickWorker, DEFAULT_INTERVAL
+from core.click_worker import ClickWorker
 from PyQt6.QtCore import QFileSystemWatcher
 from PyQt6.QtGui import QIcon
 from utils.config_utils import ensure_user_stylesheet
 from utils.FALLBACK_CSS import FALLBACK_CSS
+from settings import DEFAULT_CLICK_INTERVAL
 
 class WindowClicker(QMainWindow):
   def __init__(self):
@@ -48,7 +49,7 @@ class WindowClicker(QMainWindow):
     sel_row.addWidget(self.refresh_button)
 
     # Interval
-    self.interval_entry = QLineEdit(str(DEFAULT_INTERVAL))
+    self.interval_entry = QLineEdit(str(DEFAULT_CLICK_INTERVAL))
 
     self.press_button = QPushButton("Start")
     self.press_button.setProperty("class", "press_button")
