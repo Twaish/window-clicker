@@ -160,7 +160,7 @@ class WindowClicker(QMainWindow):
 
 if __name__ == "__main__":
   app = QApplication(sys.argv)
-  app.setWindowIcon(QIcon("../assets/logo.png"))
+  app.setWindowIcon(QIcon("assets/logo.png"))
   window = WindowClicker()
   window.show()
   try:
