@@ -19,13 +19,18 @@ def click_position(hwnd, x, y):
   win32gui.PostMessage(hwnd, win32con.WM_LBUTTONUP, 0, lParam)
 
 def focus_window(hwnd):
-  if not hwnd:
+  if not window_exists(hwnd):
     return
 
   if win32gui.IsIconic(hwnd):
     win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
   
   win32gui.SetForegroundWindow(hwnd)
+
+def window_exists(hwnd):
+  if not hwnd:
+    return False
+  return win32gui.IsWindow(hwnd)
 
 def is_window_focused(hwnd):
   return hwnd == win32gui.GetForegroundWindow()
