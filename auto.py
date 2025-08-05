@@ -3,27 +3,31 @@ import win32process
 from PyQt6.QtWidgets import (
   QApplication, QWidget, QLabel, QComboBox, QLineEdit,
   QPushButton, QVBoxLayout, QMessageBox, QTextEdit,
-  QHBoxLayout
+  QHBoxLayout, QMainWindow
 )
 from utils.window_utils import *
 from utils.click_worker import ClickWorker, DEFAULT_INTERVAL
 from PyQt6.QtCore import QFileSystemWatcher
+from PyQt6.QtGui import QIcon
+from utils.config_utils import ensure_user_stylesheet
+from utils.FALLBACK_CSS import FALLBACK_CSS
 
-class WindowClicker(QWidget):
+class WindowClicker(QMainWindow):
   def __init__(self):
     super().__init__()
-    self.setWindowTitle("Window Clicker")
+    self.setWindowTitle("Draco - Macro Application")
     self.setFixedSize(500, 250)
     
-    self.stylesheet_path = "style.css"
-    self.apply_stylesheet()
-    
+    self.stylesheet_path = ensure_user_stylesheet(app_name="draco", filename="style.css")
     self.watcher = QFileSystemWatcher([self.stylesheet_path])
     self.watcher.fileChanged.connect(self.apply_stylesheet)
 
     self.windows = []
     self.selected_hwnd = None
     self.is_pressing = False
+    
+    container = QWidget()
+    self.setCentralWidget(container)
     
     # Window Selector
     self.window_selector = QComboBox()
@@ -67,21 +71,31 @@ class WindowClicker(QWidget):
     layout.addLayout(sel_row)
     layout.addLayout(int_row)
     layout.addLayout(log_col)
-    self.setLayout(layout)
+    container.setLayout(layout)
 
     # Worker
     self.worker = ClickWorker()
     self.worker.status_update.connect(self.on_status_update)
     self.worker.finished.connect(self.on_worker_finished)
 
+    # Setup
+    self.apply_stylesheet()
     self.refresh_window_list()
+
+
   def apply_stylesheet(self):
+    css_text = None
     try:
       with open(self.stylesheet_path, "r", encoding="utf-8") as f:
-        self.setStyleSheet(f.read())
+        css_text = f.read()
+
+      if not css_text.strip():
+        raise ValueError("Stylesheet is empty")
+      self.setStyleSheet(css_text)
       print("Stylesheet reloaded.")
     except Exception as e:
-      print(f"Failed to load stylesheet: {e}")
+      print(f"Failed to load stylesheet: {e}; falling back to emergency css")
+      self.setStyleSheet(FALLBACK_CSS)
 
   def refresh_window_list(self):
     self.windows = get_all_window_titles_and_handles()
@@ -145,6 +159,7 @@ class WindowClicker(QWidget):
 
 if __name__ == "__main__":
   app = QApplication(sys.argv)
+  app.setWindowIcon(QIcon("logo.png"))
   window = WindowClicker()
   window.show()
   try:
