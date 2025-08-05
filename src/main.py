@@ -1,83 +1,50 @@
 import sys
-import win32process
 from PyQt6.QtWidgets import (
   QApplication, QWidget, QLabel, QComboBox, QLineEdit,
   QPushButton, QVBoxLayout, QMessageBox, QTextEdit,
-  QHBoxLayout, QMainWindow
+  QHBoxLayout, QMainWindow, QListWidget, QStackedWidget
 )
-from core.click_worker import ClickWorker
 from PyQt6.QtCore import QFileSystemWatcher
 from PyQt6.QtGui import QIcon
-from utils.window_utils import window_exists, focus_window, get_all_window_titles_and_handles
 from utils.config_utils import ensure_user_stylesheet
 from utils.FALLBACK_CSS import FALLBACK_CSS
-from settings import DEFAULT_CLICK_INTERVAL, APP_BAR_TITLE
+from settings import APP_BAR_TITLE
+from pages.macro_page import MacroPage
+from pages.window_clicker_page import WindowClickerPage
 
-class WindowClicker(QMainWindow):
+class MainWindow(QMainWindow):
   def __init__(self):
     super().__init__()
     self.setWindowTitle(APP_BAR_TITLE)
-    self.setFixedSize(500, 250)
+    self.setFixedSize(700, 400)
     
     self.stylesheet_path = ensure_user_stylesheet()
     self.watcher = QFileSystemWatcher([self.stylesheet_path])
     self.watcher.fileChanged.connect(self.apply_stylesheet)
 
-    self.windows = []
-    self.selected_hwnd = None
-    self.is_pressing = False
+    # Navbar
+    navbar = QHBoxLayout()
+    pages = QStackedWidget()
+
+    macro_page = QPushButton("Macro")
+    macro_page.clicked.connect(lambda: pages.setCurrentIndex(0))
+    navbar.addWidget(macro_page)
+    pages.addWidget(MacroPage())
+
+    window_clicker_page = QPushButton("Window Clicker")
+    window_clicker_page.clicked.connect(lambda: pages.setCurrentIndex(1))
+    navbar.addWidget(window_clicker_page)
+    pages.addWidget(WindowClickerPage())
     
-    # Window Selector
-    self.window_selector = QComboBox()
-    self.window_selector.currentIndexChanged.connect(self.on_window_select)
-
-    self.focus_button = QPushButton("Focus")
-    self.focus_button.clicked.connect(lambda: focus_window(self.selected_hwnd))
-
-    self.refresh_button = QPushButton()
-    self.refresh_button.setText("Refresh")
-    self.refresh_button.setToolTip("Refresh Window List")
-    self.refresh_button.clicked.connect(self.refresh_window_list)
-
-    sel_row = QHBoxLayout()
-    sel_row.addWidget(QLabel("Window"))
-    sel_row.addWidget(self.window_selector)
-    sel_row.addWidget(self.focus_button)
-    sel_row.addWidget(self.refresh_button)
-
-    # Interval
-    self.interval_entry = QLineEdit(str(DEFAULT_CLICK_INTERVAL))
-
-    self.press_button = QPushButton("Start")
-    self.press_button.setProperty("class", "press_button")
-    self.press_button.clicked.connect(self.toggle_pressing)
-    
-    int_row = QHBoxLayout()
-    int_row.addWidget(QLabel("Interval (seconds)"))
-    int_row.addWidget(self.interval_entry)
-    int_row.addWidget(self.press_button)
-    
-    # Logs
-    self.details_box = QTextEdit()
-    self.details_box.setReadOnly(True)
-
-    # Main Layout
-    layout = QVBoxLayout()
-    layout.addLayout(sel_row)
-    layout.addLayout(int_row)
-    layout.addWidget(self.details_box)
+    main_layout = QVBoxLayout()
+    main_layout.addLayout(navbar)
+    main_layout.addWidget(pages)
     container = QWidget()
-    container.setLayout(layout)
+    container.setLayout(main_layout)
     self.setCentralWidget(container)
-
-    # Worker
-    self.worker = ClickWorker()
-    self.worker.pressing_update.connect(self.on_pressing_update)
-    self.worker.status_update.connect(self.on_status_update)
 
     # Setup
     self.apply_stylesheet()
-    self.refresh_window_list()
 
   def apply_stylesheet(self):
     try:
@@ -88,59 +55,15 @@ class WindowClicker(QMainWindow):
       if not css_text.strip():
         raise ValueError("Stylesheet is empty")
       self.setStyleSheet(css_text)
-      self.on_status_update("Stylesheet reloaded.")
+      print("Stylesheet reloaded.")
     except Exception as e:
-      self.on_status_update(f"Failed to load stylesheet: {e}; falling back to emergency css")
+      print(f"Failed to load stylesheet: {e}; falling back to emergency css")
       self.setStyleSheet(FALLBACK_CSS)
-
-  def refresh_window_list(self):
-    self.windows = get_all_window_titles_and_handles()
-    self.window_selector.clear()
-    titles = [title if title else "<No Title>" for _, title in self.windows]
-    self.window_selector.addItems(titles)
-    self.selected_hwnd = None
-    self.details_box.setPlainText("No window selected.")
-
-  def on_window_select(self, index):
-    if index < 0 or index >= len(self.windows):
-      self.details_box.setPlainText("No window selected.")
-      self.selected_hwnd = None
-      return
-    hwnd, title = self.windows[index]
-    self.selected_hwnd = hwnd
-    _, pid = win32process.GetWindowThreadProcessId(hwnd)
-    self.details_box.setPlainText(f'title: "{title}"\nhwnd: {hwnd}\npid: {pid}')
-
-  def toggle_pressing(self):
-    if self.is_pressing:
-      self.worker.stop_pressing()
-      return
-    
-    if not window_exists(self.selected_hwnd):
-      QMessageBox.warning(self, "Warning", "Selected window is not valid or no longer exists.")
-      return
-    
-    interval = self.interval_entry.text()
-    self.worker.start_pressing(self.selected_hwnd, interval)
-
-  def on_pressing_update(self, is_pressing):
-    self.press_button.setText("Stop" if is_pressing else "Start")
-    self.press_button.setProperty("active", is_pressing)
-    self.is_pressing = is_pressing
-    self.refresh_style(self.press_button)
-  
-  def on_status_update(self, msg):
-    self.details_box.append(f"[Status] {msg}")
-
-  def refresh_style(self, widget):
-    widget.style().unpolish(widget)
-    widget.style().polish(widget)
-    widget.update()
 
 if __name__ == "__main__":
   app = QApplication(sys.argv)
   app.setWindowIcon(QIcon("assets/logo.png"))
-  window = WindowClicker()
+  window = MainWindow()
   window.show()
   try:
     sys.exit(app.exec())
