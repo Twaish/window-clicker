@@ -1,7 +1,7 @@
 FALLBACK_CSS = """
 * {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   font-family: "Consolas", "JetBrainsMono NFP";
   margin: 0;
   padding: 0;
@@ -10,32 +10,20 @@ FALLBACK_CSS = """
 
 QWidget {
   background-color: #222;
-  padding: 6px;
 }
 
-QPushButton {
+QPushButton, QComboBox, QLineEdit, QTextEdit {
+  padding: 6px;
   border: 1px solid #555;
+  background: #202020;
   border-radius: 4px;
 }
+
 QPushButton:hover {
   background: #343434;
 }
-
-QComboBox {
-  border: 1px solid #555;
-  border-radius: 4px;
-}
-
-QLineEdit {
-  background: #202020;
-  border: 1px solid #555;
-  border-radius: 4px;
-}
-
-QTextEdit {
-  background: #202020;
-  border: 1px solid #555;
-  border-radius: 4px;
+QComboBox:hover {
+  background: #343434;
 }
 
 .press_button {
