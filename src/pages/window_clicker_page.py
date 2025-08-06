@@ -57,6 +57,7 @@ class WindowClickerPage(QWidget):
     layout.addWidget(self.details_box)
     main_layout = QHBoxLayout()
     main_layout.addLayout(layout)
+    main_layout.setContentsMargins(0, 0, 0, 0)
     self.setLayout(main_layout)
 
     # Worker
@@ -73,6 +74,7 @@ class WindowClickerPage(QWidget):
     self.window_selector.addItems(titles)
     self.selected_hwnd = None
     self.details_box.setPlainText("No window selected.")
+    self.on_window_select(0)
 
   def on_window_select(self, index):
     if index < 0 or index >= len(self.windows):
