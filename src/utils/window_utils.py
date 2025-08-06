@@ -1,11 +1,20 @@
 import win32api
 import win32con
 import win32gui
+import win32process
+import psutil
 
 def enum_windows_callback(hwnd, windows):
-  if win32gui.IsWindowVisible(hwnd) and win32gui.IsWindowEnabled(hwnd):
-    window_title = win32gui.GetWindowText(hwnd)
-    windows.append((hwnd, window_title))
+  if not win32gui.IsWindow(hwnd) or not win32gui.IsWindowEnabled(hwnd):
+    return
+  
+  _, pid = win32process.GetWindowThreadProcessId(hwnd)
+  proc = psutil.Process(pid)
+  if proc.name().lower() == "explorer.exe":
+    return
+  
+  window_title = win32gui.GetWindowText(hwnd)
+  windows.append((hwnd, window_title, pid))
 
 def get_all_window_titles_and_handles():
   windows = []

@@ -1,8 +1,7 @@
-import win32process
 from PyQt6.QtWidgets import (
   QWidget, QLabel, QComboBox, QLineEdit,
   QPushButton, QVBoxLayout, QMessageBox, QTextEdit,
-  QHBoxLayout, QListWidget
+  QHBoxLayout
 )
 from core.click_worker import ClickWorker
 from utils.window_utils import window_exists, focus_window, get_all_window_titles_and_handles
@@ -70,7 +69,7 @@ class WindowClickerPage(QWidget):
   def refresh_window_list(self):
     self.windows = get_all_window_titles_and_handles()
     self.window_selector.clear()
-    titles = [title if title else "<No Title>" for _, title in self.windows]
+    titles = [title if title else "<No Title>" for _, title, _ in self.windows]
     self.window_selector.addItems(titles)
     self.selected_hwnd = None
     self.details_box.setPlainText("No window selected.")
@@ -80,9 +79,8 @@ class WindowClickerPage(QWidget):
       self.details_box.setPlainText("No window selected.")
       self.selected_hwnd = None
       return
-    hwnd, title = self.windows[index]
+    hwnd, title, pid = self.windows[index]
     self.selected_hwnd = hwnd
-    _, pid = win32process.GetWindowThreadProcessId(hwnd)
     self.details_box.setPlainText(f'title: "{title}"\nhwnd: {hwnd}\npid: {pid}')
 
   def toggle_pressing(self):
