@@ -1,1 +1,1 @@
-py auto.py
+py src/main.py
