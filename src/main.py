@@ -1,3 +1,4 @@
+import os
 import sys
 from PyQt6.QtWidgets import (
   QApplication, QWidget, QLabel, QComboBox, QLineEdit,
@@ -7,7 +8,6 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QFileSystemWatcher
 from PyQt6.QtGui import QIcon
 from utils.config_utils import ensure_user_stylesheet
-from utils.FALLBACK_CSS import FALLBACK_CSS
 from settings import APP_BAR_TITLE
 from pages.macro_page import MacroPage
 from pages.window_clicker_page import WindowClickerPage
@@ -60,12 +60,14 @@ class MainWindow(QMainWindow):
       self.setStyleSheet(css_text)
       print("Stylesheet reloaded.")
     except Exception as e:
-      print(f"Failed to load stylesheet: {e}; falling back to emergency css")
-      self.setStyleSheet(FALLBACK_CSS)
+      print(f"Failed to load stylesheet: {e}")
 
 if __name__ == "__main__":
+  base_dir = os.path.dirname(os.path.abspath(__file__))
+  icon_path = os.path.join(base_dir, "assets", "logo.png")
+
   app = QApplication(sys.argv)
-  app.setWindowIcon(QIcon("assets/logo.png"))
+  app.setWindowIcon(QIcon(icon_path))
   window = MainWindow()
   window.show()
   try:
