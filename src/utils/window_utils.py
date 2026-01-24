@@ -7,14 +7,25 @@ import psutil
 def enum_windows_callback(hwnd, windows):
   if not win32gui.IsWindow(hwnd) or not win32gui.IsWindowEnabled(hwnd):
     return
-  
-  _, pid = win32process.GetWindowThreadProcessId(hwnd)
-  proc = psutil.Process(pid)
-  if proc.name().lower() == "explorer.exe":
+
+  try:
+    _, pid = win32process.GetWindowThreadProcessId(hwnd)
+    if pid == 0:
+      return
+
+    try:
+      proc = psutil.Process(pid)
+      if proc.name().lower() == "explorer.exe":
+        return
+    except psutil.NoSuchProcess:
+      return
+
+    window_title = win32gui.GetWindowText(hwnd)
+    if window_title:
+      windows.append((hwnd, window_title, pid))
+
+  except Exception:
     return
-  
-  window_title = win32gui.GetWindowText(hwnd)
-  windows.append((hwnd, window_title, pid))
 
 def get_all_window_titles_and_handles():
   windows = []
